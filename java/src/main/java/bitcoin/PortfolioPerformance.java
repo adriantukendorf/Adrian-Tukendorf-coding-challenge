@@ -1,8 +1,11 @@
 package bitcoin;
 
 import java.math.BigDecimal;
+import java.math.MathContext;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.Month;
+import java.util.ArrayList;
 import java.util.List;
 
 public class PortfolioPerformance {
@@ -24,6 +27,59 @@ public class PortfolioPerformance {
 
     // Complete this method to return a list of daily portfolio values with one record for each day from the 01-09-2021-07-09-2021 in ascending date order
     public static List<DailyPortfolioValue> getDailyPortfolioValues() {
-        return null;
+        //Start and end date of the operation
+        var startDate = LocalDate.of(2021, 9, 1);
+        var endDate = LocalDate.of(2021, 9, 7);
+
+        List<DailyPortfolioValue> PERFORMANCE = new ArrayList<>();
+
+        Price latestBitcoinPriceTime = null;
+        BigDecimal accountBalance = BigDecimal.valueOf(0.00000);
+        MathContext mc = new MathContext(9);
+
+        for (LocalDate date = startDate; date.isBefore(endDate) || date.isEqual(endDate); date = date.plusDays(1)) {
+            int priceChangesSameDay = 0;
+
+            //Calculating the latest price of Bitcoin for the specific date
+            try {
+                for (Price price : PRICES) {
+                    if (price.effectiveDate().toLocalDate().isEqual(date)) {
+                        latestBitcoinPriceTime = price;
+                        priceChangesSameDay++;
+                        if (priceChangesSameDay > 1) {
+                            if (price.effectiveDate().compareTo(latestBitcoinPriceTime.effectiveDate()) < 0) {
+                                latestBitcoinPriceTime = price;
+                            }
+                        }
+                    }
+                }
+
+            } catch (Exception error1) {
+                System.out.println("Error: price calculation");
+            }
+
+            //Calculating transactions value per day
+            try {
+                for (Transaction transaction : TRANSACTIONS) {
+                    if (transaction.effectiveDate().toLocalDate().isEqual(date)) {
+                        accountBalance = accountBalance.add(transaction.numberOfBitcoins(), mc);
+                    }
+                }
+            } catch (Exception error2) {
+                System.out.println("Error: transactions calculations");
+            }
+
+            //Visualisation of the Bitcoin price for a specific day
+            System.out.println("Date:" + date + " BTC:" + accountBalance);
+
+                //Daily portfolio value calculation accountBalance*latestPrice
+                BigDecimal performance = accountBalance.multiply(latestBitcoinPriceTime.price(), mc);
+
+            //Adding calculated values to the list that is to be returned
+            PERFORMANCE.add(new DailyPortfolioValue(date, performance));
+        }
+
+
+        return PERFORMANCE;
     }
 }
